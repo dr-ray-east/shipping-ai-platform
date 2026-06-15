@@ -4,19 +4,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from google import genai
 from fpdf import FPDF
+import sqlite3
 
 # Page settings
 st.set_page_config(page_title="AI Customs Auditor", layout="wide")
 st.title("⚡ AI Shipping Compliance Auditor")
 st.markdown("---")
 
-!
+# Secure API Connection using hidden environment secrets
 if "GEMINI_API_KEY" in st.secrets:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 else:
     API_KEY = "DEVELOPER_FALLBACK_KEY"
-
-ai_client = genai.Client(api_key=API_KEY)
 
 
 st.subheader("📋 Step 1: Upload Your Cargo Manifest File")
@@ -64,18 +63,39 @@ if uploaded_file is not None:
             st.error(f"❌ SECURITY BREACH: Container **{c_id}** flagged.")
             with st.spinner(f"🤖 AI Agent is drafting an executive compliance brief for {c_id}..."):
                 
-                # Prompt Engineering
+                # Advanced prompt engineering forcing financial and routing calculations
                 prompt = f"""
-                You are an elite International Maritime Customs Lawyer. 
-                Container ID: {c_id} has used an Illegal HS Code: {code} for '{cargo}'.
-                Write a formal 3-sentence corporate briefing detailing the violation and risk.
+                You are a Senior Maritime Risk Analyst and International Customs Lawyer.
+                A severe breach has occurred.
+                Container ID: {c_id}
+                Declared Cargo: {cargo}
+                Illegal Breached HS Code Used: {code}
+                
+                Provide a formal 4-sentence Executive Briefing using this strict structural breakdown:
+                Sentence 1: Detail the specific regulatory violation.
+                Sentence 2: Calculate a realistic estimated customs financial penalty (in Lakhs or Crores of INR) based on standard international tariff violations.
+                Sentence 3: Issue an immediate tactical directive to the port authority to impound or isolate the vessel.
+                Sentence 4: Provide a specific legal alternative shipping route or operational mitigation strategy to bypass the compromised cargo stream.
+                
                 Do not use markdown formatting like bold asterisks.
                 """
                 response = ai_client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
                 ai_text = response.text
                 st.info(f"📄 **AI Generated Compliance Brief ({c_id}):**\n\n{ai_text}")
                 
-                # --- Core PDF Document Generator Engine ---
+                # --- LIVE SQL DATABASE TRANSACTION ENGINE (FIXED) ---
+                conn = sqlite3.connect('platform_storage.db')
+                cursor = conn.cursor()
+                # Check if this container was already logged previously to avoid duplicates
+                cursor.execute("SELECT * FROM audit_history WHERE container_id=?", (c_id,))
+                if not cursor.fetchone():
+                    cursor.execute("INSERT INTO audit_history (container_id, cargo_item, customs_code, risk_brief) VALUES (?, ?, ?, ?)",
+                                   (c_id, cargo, code, ai_text))
+                    conn.commit()
+                    st.toast(f"💾 Container {c_id} permanently logged into SQL Server archive.")
+                conn.close()
+                
+                # --- Core PDF Document Engine ---
                 pdf = FPDF()
                 pdf.add_page()
                 pdf.set_font("Arial", "B", 16)
