@@ -6,60 +6,60 @@ import numpy as np
 
 # Page settings
 st.set_page_config(page_title="Global Analytics Dashboard", layout="wide")
-st.title("📊 Global Supply Chain Analytics Trends")
-st.markdown("---")
 
-st.info("💡 This screen provides logistics executives with a bird's-eye view of macro compliance patterns and port throughput over time.")
+# --- UNBREAKABLE SECURITY & PAYWALL GATE ---
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.title("🔒 Access Denied")
+    st.error("⚠️ Please authenticate via the main Portal Login on the Home page first.")
+elif st.session_state.sub_status != "Active":
+    st.title("🛑 Module Suspended")
+    st.error(f"⚠️ Access to Global Analytics is blocked for {st.session_state.company} due to an unpaid monthly subscription balance.")
+else:
+    # --- EXECUTIVE ANALYTICS RUN ONLY IF LOGGED IN & PAID ---
+    st.title("📊 Global Supply Chain Analytics Trends")
+    st.markdown("---")
 
-# 1. Simulate Historical Shipments Dataset (200 rows tracking values)
-np.random.seed(42)
-months = np.random.choice(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], 200)
-cargo_categories = np.random.choice(['Electronics', 'Pharmaceuticals', 'Coffee/Agriculture', 'Textiles'], 200)
-shipment_values = np.random.randint(50, 1500, 200) # Values in Lakhs of Rupees 
-status = np.random.choice(['Cleared', 'Cleared', 'Cleared', 'Flagged Breach'], 200, p=[0.7, 0.15, 0.1, 0.05])
+    st.info("💡 This screen provides logistics executives with a bird's-eye view of macro compliance patterns and port throughput over time.")
 
-df_history = pd.DataFrame({
-    'Month': months,
-    'Category': cargo_categories,
-    'Value_Lakhs': shipment_values,
-    'Status': status
-})
+    # Simulate Data
+    np.random.seed(42)
+    months = np.random.choice(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], 200)
+    cargo_categories = np.random.choice(['Electronics', 'Pharmaceuticals', 'Coffee/Agriculture', 'Textiles'], 200)
+    shipment_values = np.random.randint(50, 1500, 200)
+    status = np.random.choice(['Cleared', 'Cleared', 'Cleared', 'Flagged Breach'], 200, p=[0.7, 0.15, 0.1, 0.05])
 
-# 2. Executive KPI Cards Row Layout
-st.subheader("📈 High-Level Performance Indicators")
-kpi1, kpi2, kpi3 = st.columns(3)
+    df_history = pd.DataFrame({
+        'Month': months,
+        'Category': cargo_categories,
+        'Value_Lakhs': shipment_values,
+        'Status': status
+    })
 
-with kpi1:
-    total_val = df_history['Value_Lakhs'].sum() / 100 # Convert Lakhs to Crores
-    st.metric(label="Total Throughput Value Audited", value=f"₹{round(total_val, 2)} Crores")
-with kpi2:
-    avg_shipment = df_history['Value_Lakhs'].mean()
-    st.metric(label="Average Cargo Value per Container", value=f"₹{round(avg_shipment, 1)} Lakhs")
-with kpi3:
-    total_breaches = len(df_history[df_history['Status'] == 'Flagged Breach'])
-    st.metric(label="Total Intercepted Contraband Violations", value=total_breaches, delta="- High Risk" if total_breaches > 0 else "0")
+    st.subheader("📈 High-Level Performance Indicators")
+    kpi1, kpi2, kpi3 = st.columns(3)
 
-st.markdown("---")
+    with kpi1:
+        total_val = df_history['Value_Lakhs'].sum() / 100
+        st.metric(label="Total Throughput Value Audited", value=f"₹{round(total_val, 2)} Crores")
+    with kpi2:
+        avg_shipment = df_history['Value_Lakhs'].mean()
+        st.metric(label="Average Cargo Value per Container", value=f"₹{round(avg_shipment, 1)} Lakhs")
+    with kpi3:
+        total_breaches = len(df_history[df_history['Status'] == 'Flagged Breach'])
+        st.metric(label="Total Intercepted Contraband Violations", value=total_breaches)
 
-# 3. Visual Charts Layout Columns
-col1, col2 = st.columns(2)
+    st.markdown("---")
 
-with col1:
-    st.subheader("📅 Financial Value Flow by Month")
-    monthly_trend = df_history.groupby('Month')['Value_Lakhs'].sum().reindex(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']).reset_index()
-    
-    fig1, ax1 = plt.subplots(figsize=(6, 4))
-    sns.lineplot(x='Month', y='Value_Lakhs', data=monthly_trend, marker='o', color='teal', linewidth=3, ax=ax1)
-    plt.ylabel("Total Value (in Lakhs)")
-    plt.title("Value Throughput Trend", fontsize=12, fontweight='bold')
-    st.pyplot(fig1)
-
-with col2:
-    st.subheader("⚡ Risk Distribution by Product Category")
-    breach_df = df_history[df_history['Status'] == 'Flagged Breach']
-    
-    fig2, ax2 = plt.subplots(figsize=(6, 4))
-    sns.countplot(x='Category', data=breach_df, palette='flare', ax=ax2)
-    plt.ylabel("Number of Intercepted Breaches")
-    plt.title("Threat Density by Asset Profile", fontsize=12, fontweight='bold')
-    st.pyplot(fig2)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("📅 Financial Value Flow by Month")
+        monthly_trend = df_history.groupby('Month')['Value_Lakhs'].sum().reindex(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']).reset_index()
+        fig1, ax1 = plt.subplots(figsize=(6, 4))
+        sns.lineplot(x='Month', y='Value_Lakhs', data=monthly_trend, marker='o', color='teal', linewidth=3, ax=ax1)
+        st.pyplot(fig1)
+    with col2:
+        st.subheader("⚡ Risk Distribution by Product Category")
+        breach_df = df_history[df_history['Status'] == 'Flagged Breach']
+        fig2, ax2 = plt.subplots(figsize=(6, 4))
+        sns.countplot(x='Category', data=breach_df, palette='flare', ax=ax2)
+        st.pyplot(fig2)

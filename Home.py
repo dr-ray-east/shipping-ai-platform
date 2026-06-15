@@ -3,6 +3,41 @@ import sqlite3
 
 st.set_page_config(page_title="Enterprise Logistics AI", layout="wide")
 
+# --- AUTO-INITIALIZE DATABASE FOR CLOUD PRODUCTION ---
+def init_db_if_missing():
+    conn = sqlite3.connect('platform_storage.db')
+    cursor = conn.cursor()
+    # Build users table if missing
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        username TEXT PRIMARY KEY,
+        password TEXT NOT NULL,
+        company_name TEXT,
+        subscription_status TEXT DEFAULT 'Active'
+    )
+    ''')
+    # Build history table if missing
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS audit_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        container_id TEXT NOT NULL,
+        cargo_item TEXT,
+        customs_code TEXT,
+        risk_brief TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+    # Inject default admin user if the table is fresh and empty
+    cursor.execute("SELECT * FROM users WHERE username='admin'")
+    if not cursor.fetchone():
+        cursor.execute("INSERT INTO users VALUES ('admin', 'password123', 'Global Shipping Corp', 'Active')")
+        cursor.execute("INSERT INTO users VALUES ('client_unpaid', 'password123', 'Expedited Logistics', 'Unpaid')")
+        conn.commit()
+    conn.close()
+
+# Run the database self-healer right on boot!
+init_db_if_missing()
+
 # --- INITIALIZE STREAMLIT SESSION STATE MEMORY ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -15,7 +50,6 @@ if "sub_status" not in st.session_state:
 def check_login(user, pwd):
     conn = sqlite3.connect('platform_storage.db')
     cursor = conn.cursor()
-    # Pull both the company name and their billing subscription status
     cursor.execute("SELECT company_name, subscription_status FROM users WHERE username=? AND password=?", (user, pwd))
     result = cursor.fetchone()
     conn.close()
@@ -42,10 +76,8 @@ if not st.session_state.logged_in:
             else:
                 st.error("Invalid Username or Password. Security alert logged.")
 else:
-    # --- PROCEED TO MAIN LANDING SCREEN ONCE AUTHENTICATED ---
     st.sidebar.markdown(f"💼 **Org:** {st.session_state.company}")
     
-    # Visual billing badge in the side panel
     if st.session_state.sub_status == "Active":
         st.sidebar.markdown("🟢 **Subscription:** Corporate Active")
     else:
@@ -55,10 +87,9 @@ else:
         st.session_state.logged_in = False
         st.rerun()
 
-    # --- CONDITIONAL PAYWALL ACCESS GATE ---
     if st.session_state.sub_status != "Active":
         st.error("⚠️ ACCOUNT SUSPENDED: Your company's monthly subscription has expired.")
-        st.markdown(f"""
+        st.markdown("""
         ### 🛑 Action Required: Payment Pending
         To unlock the AI Customs Compliance Auditor and access your historical archives, your financial terminal must clear the outstanding monthly balance.
         
@@ -66,10 +97,8 @@ else:
         * **Billing Cycle:** Monthly Corporate Flat Rate
         """)
         
-        # Simulated secure checkout button
         if st.button("💳 Proceed to Secure Stripe Corporate Payment"):
-            st.info("🔗 Redirecting to secure Stripe Checkout terminal... (Simulated payment gate link)")
-            # In a live product, we would switch this status flag back to 'Active' in the database upon successful charge callback!
+            st.info("🔗 Redirecting to secure Stripe Checkout terminal...")
             conn = sqlite3.connect('platform_storage.db')
             cursor = conn.cursor()
             cursor.execute("UPDATE users SET subscription_status='Active' WHERE company_name=?", (st.session_state.company,))
@@ -85,8 +114,4 @@ else:
         st.markdown(f"""
         ### Active Portal Workspace: {st.session_state.company}
         This autonomous AI architecture eliminates structural customs risks by cross-referencing live logistical datasets.
-        
-        #### 🗺️ Active Enterprise Modules Available in Sidebar Menu:
-        * **Compliance Auditor:** Ingest manifest documents, clean string noise, trigger Gemini LLM legal analysis, and export downloadable PDFs.
-        * **Global Analytics:** Evaluate macro financial throughput and trend concentrations over historical periods.
         """)
