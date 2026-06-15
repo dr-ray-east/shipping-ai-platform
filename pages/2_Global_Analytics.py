@@ -18,19 +18,18 @@ else:
     st.markdown("---")
     st.info("💡 This screen provides logistics executives with a bird's-eye view of macro compliance patterns and port throughput over time.")
 
-    # Historical Simulation Matrix Datasets
-    np.random.seed(42)
-    months = np.random.choice(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], 200)
-    cargo_categories = np.random.choice(['Electronics', 'Pharmaceuticals', 'Coffee/Agriculture', 'Textiles'], 200)
-    shipment_values = np.random.randint(50, 1500, 200)
-    status = np.random.choice(['Cleared', 'Cleared', 'Cleared', 'Flagged Breach'], 200, p=[0.7, 0.15, 0.1, 0.05])
+        # 1. CONNECT TO LIVE REAL-TIME DATABASE
+    conn = sqlite3.connect('platform_storage.db')
+    
+    # Read live rows populated directly by your compliance auditor screen
+    query = "SELECT * FROM audit_history"
+    df_history = pd.read_sql_query(query, conn)
+    conn.close()
 
-    df_history = pd.DataFrame({
-        'Month': months,
-        'Category': cargo_categories,
-        'Value_Lakhs': shipment_values,
-        'Status': status
-    })
+    # --- FALLBACK CHECK FOR NEW INSTANCES ---
+    if df_history.empty:
+        st.warning("⚠️ No live data found in the SQL archive yet. Upload files in the Compliance Auditor page to populate this screen in real time.")
+        # Re-inject short temporary simulation block just so the screen doesn't stay completely blank before first upload
 
     st.subheader("📈 High-Level Performance Indicators")
     kpi1, kpi2, kpi3 = st.columns(3)
