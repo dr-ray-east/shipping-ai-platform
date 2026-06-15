@@ -6,30 +6,29 @@ from google import genai
 from fpdf import FPDF
 import sqlite3
 
-# Page settings
+# Enforce uniform wide layout
 st.set_page_config(page_title="AI Customs Auditor", layout="wide")
 
-# --- UNBREAKABLE SECURITY & PAYWALL GATE ---
+# --- MULTI-PAGE SECURE COMPLIANCE CHECKER ---
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.title("🔒 Access Denied")
-    st.error("⚠️ Please authenticate via the main Portal Login on the Home page first.")
-    st.info("💡 Use the sidebar navigation menu to click back to 'Home' and enter your organization credentials.")
+    st.error("⚠️ Unauthorized entry path detected. Please authenticate on the Home landing page first.")
+    st.info("💡 Open the left menu, select 'Home', and input your administrative portal credentials.")
 elif st.session_state.sub_status != "Active":
-    st.title("🛑 Module Suspended")
-    st.error(f"⚠️ Access to the AI Auditor is blocked for {st.session_state.company} due to an unpaid monthly subscription balance.")
-    st.warning("💳 Please go back to the Home page and complete your Stripe checkout to unlock this premium tool.")
+    st.title("🛑 Access Suspended")
+    st.error(f"⚠️ The AI Auditor is locked for {st.session_state.company} due to a pending monthly invoice.")
+    st.warning("💳 Please navigate to the Home page to process your secure corporate Stripe payment.")
 else:
-    # --- ALL PREMIUM TOOLS RUN ONLY IF LOGGED IN & PAID! ---
+    # --- RENDER PREMIUM APPLICATION CONTROLS ---
     st.title("⚡ AI Shipping Compliance Auditor")
     st.markdown("---")
 
-    # Secure API Connection
-   # Secure Cloud API Connection: Pull key safely from hidden Streamlit secrets
-if "GEMINI_API_KEY" in st.secrets:
-    API_KEY = st.secrets["GEMINI_API_KEY"]
-else:
-    API_KEY = "DEVELOPER_FALLBACK_KEY"
-
+    # Connect to Google Cloud AI Engine safely via hidden keys
+    if "GEMINI_API_KEY" in st.secrets:
+        API_KEY = st.secrets["GEMINI_API_KEY"]
+    else:
+        API_KEY = "DEVELOPER_FALLBACK_KEY"
+    ai_client = genai.Client(api_key=API_KEY)
 
     st.subheader("📋 Step 1: Upload Your Cargo Manifest File")
     uploaded_file = st.file_uploader("Choose a CSV file...", type=["csv"])
@@ -38,7 +37,7 @@ else:
         raw_df = pd.read_csv(uploaded_file)
         st.info("🔄 Raw data ingested. Running defensive cleanup pipeline...")
         
-        # Defensive Data Cleaning Pipeline
+        # Data Scrubbing Pipeline
         clean_df = raw_df.dropna(subset=['Container_ID', 'Cargo_Item'])
         clean_df['Customs_Code'] = pd.to_numeric(clean_df['Customs_Code'], errors='coerce')
         clean_df = clean_df.dropna(subset=['Customs_Code'])
@@ -46,13 +45,13 @@ else:
         
         st.success("✨ Data scrubbed successfully! Corrupt lines eliminated.")
 
-        # Sidebar KPI Metrics Panel
+        # Sidebar Panel Performance Numbers
         st.sidebar.header("📊 Cargo Shipment Metrics")
         st.sidebar.metric(label="Total Clean Containers", value=len(clean_df))
         threat_count = len(clean_df[clean_df['Customs_Code'] == '9999'])
         st.sidebar.metric(label="Critical Security Threats", value=threat_count)
 
-        # Main UI Columns Layout
+        # Split Column Graphical Grid Presentation Layout
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("📊 Cleaned Data Grid")
@@ -64,7 +63,7 @@ else:
             plt.title("Cargo Distribution Count", fontsize=12, fontweight='bold')
             st.pyplot(fig)
 
-        # Automated Alerts & Autonomous AI Report Loop
+        # Autonomous AI Risk Mapping Execution Flow
         st.subheader("🚨 Live Threat & Compliance Analysis")
         for index, row in clean_df.iterrows():
             c_id = str(row['Container_ID']).strip()
@@ -75,16 +74,19 @@ else:
                 st.error(f"❌ SECURITY BREACH: Container **{c_id}** flagged.")
                 with st.spinner(f"🤖 AI Agent is drafting an executive compliance brief for {c_id}..."):
                     prompt = f"""
-                    You are an elite International Maritime Customs Lawyer. 
-                    Container ID: {c_id} has used an Illegal HS Code: {code} for '{cargo}'.
-                    Write a formal 3-sentence corporate briefing detailing the violation and risk.
-                    Do not use markdown formatting like bold asterisks.
+                    You are a Senior Maritime Risk Analyst and International Customs Lawyer.
+                    Container ID: {c_id} | Cargo: {cargo} | Code: {code}.
+                    Write a formal 4-sentence Executive Briefing:
+                    Sentence 1: Detail the specific violation.
+                    Sentence 2: State a realistic penalty in Lakhs or Crores of INR.
+                    Sentence 3: Issue an immediate impound directive.
+                    Sentence 4: Suggest an alternative route to bypass the risk. Do not use bold markdown asterisks.
                     """
                     response = ai_client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
                     ai_text = response.text
                     st.info(f"📄 **AI Generated Compliance Brief ({c_id}):**\n\n{ai_text}")
                     
-                    # SQL Transaction Engine
+                    # Log Transaction Data into SQLite Archive Tables
                     conn = sqlite3.connect('platform_storage.db')
                     cursor = conn.cursor()
                     cursor.execute("SELECT * FROM audit_history WHERE container_id=?", (c_id,))
@@ -95,7 +97,7 @@ else:
                         st.toast(f"💾 Container {c_id} permanently logged into SQL Server archive.")
                     conn.close()
                     
-                    # PDF Engine
+                    # Compile PDF document buffers
                     pdf = FPDF()
                     pdf.add_page()
                     pdf.set_font("Arial", "B", 16)

@@ -4,24 +4,21 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-# Page settings
 st.set_page_config(page_title="Global Analytics Dashboard", layout="wide")
 
-# --- UNBREAKABLE SECURITY & PAYWALL GATE ---
+# --- MULTI-PAGE SECURE COMPLIANCE CHECKER ---
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.title("🔒 Access Denied")
-    st.error("⚠️ Please authenticate via the main Portal Login on the Home page first.")
+    st.error("⚠️ Unauthorized entry path detected. Please authenticate on the Home landing page first.")
 elif st.session_state.sub_status != "Active":
-    st.title("🛑 Module Suspended")
-    st.error(f"⚠️ Access to Global Analytics is blocked for {st.session_state.company} due to an unpaid monthly subscription balance.")
+    st.title("🛑 Access Suspended")
+    st.error(f"⚠️ Analytics dashboards are locked for {st.session_state.company} due to pending balances.")
 else:
-    # --- EXECUTIVE ANALYTICS RUN ONLY IF LOGGED IN & PAID ---
     st.title("📊 Global Supply Chain Analytics Trends")
     st.markdown("---")
-
     st.info("💡 This screen provides logistics executives with a bird's-eye view of macro compliance patterns and port throughput over time.")
 
-    # Simulate Data
+    # Historical Simulation Matrix Datasets
     np.random.seed(42)
     months = np.random.choice(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], 200)
     cargo_categories = np.random.choice(['Electronics', 'Pharmaceuticals', 'Coffee/Agriculture', 'Textiles'], 200)
